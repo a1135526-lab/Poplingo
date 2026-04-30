@@ -1,0 +1,117 @@
+.root {
+    -fx-background-color: linear-gradient(to bottom right, #FFD1FF, #BEE4FF);
+}
+
+.title-label {
+    -fx-text-fill: #4A4E69;
+    -fx-font-size: 50px;
+    -fx-font-family: 'Segoe UI Rounded', 'Arial', sans-serif;
+    -fx-font-weight: 900;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 5, 0, 0, 3);
+}
+
+.subtitle-text {
+    -fx-text-fill: #7F7F9D;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-letter-spacing: 1px;
+}
+
+/* 登入按鈕 */
+.login-button {
+    -fx-background-color: #58CC02;
+    -fx-text-fill: white;
+    -fx-font-size: 20px;
+    -fx-font-weight: 900;
+    -fx-background-radius: 25;
+    -fx-border-radius: 25;
+    -fx-cursor: hand;
+    -fx-border-color: #58A700;
+    -fx-border-width: 0 0 5 0;
+}
+
+.login-button:hover { -fx-background-color: #61E002; }
+.login-button:pressed {
+    -fx-background-color: #58A700;
+    -fx-translate-y: 5px;
+    -fx-border-width: 0;
+}
+
+/* 列表按鈕 (共用玩具按鈕風格，但顏色改為水藍色) */
+.list-button {
+    -fx-background-color: #1CB0F6;
+    -fx-text-fill: white;
+    -fx-font-size: 18px;
+    -fx-font-weight: 900;
+    -fx-background-radius: 20;
+    -fx-border-radius: 20;
+    -fx-cursor: hand;
+    -fx-border-color: #1899D6;
+    -fx-border-width: 0 0 4 0;
+}
+.list-button:hover { -fx-background-color: #1DD0FF; }
+.list-button:pressed {
+    -fx-background-color: #1899D6;
+    -fx-translate-y: 4px;
+    -fx-border-width: 0;
+}
+
+/* 學習單字卡 */
+.flashcard {
+    -fx-background-color: #FFFFFF;
+    -fx-background-radius: 25;
+    -fx-padding: 20;
+    -fx-effect: dropshadow(gaussian, rgba(160, 170, 200, 0.4), 15, 0, 0, 8);
+}
+
+.flashcard-word {
+    -fx-text-fill: #222222;
+    -fx-font-size: 32px;
+    -fx-font-weight: 900;
+}
+
+.flashcard-phonetic {
+    -fx-text-fill: #999999;
+    -fx-font-size: 16px;
+}
+
+.flashcard-translation {
+    -fx-text-fill: #1CB0F6;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+}
+
+.flashcard-lyric {
+    -fx-text-fill: #555555;
+    -fx-font-size: 14px;
+    -fx-font-style: italic;
+    -fx-text-alignment: center;
+}
+
+/* =========================================
+   進度條美化 (Music Slider)
+   ========================================= */
+.music-slider .track {
+    -fx-background-color: #E1E4E8; /* 未播放的軌道顏色 (淺灰) */
+    -fx-background-radius: 10;
+    -fx-pref-height: 8px; /* 軌道變粗一點 */
+}
+
+/* 這是滑桿的圓點 */
+.music-slider .thumb {
+    -fx-background-color: #1CB0F6; /* 活潑的水藍色 */
+    -fx-pref-height: 18px;
+    -fx-pref-width: 18px;
+    -fx-background-radius: 50%; /* 變成正圓形 */
+    -fx-effect: dropshadow(gaussian, rgba(28, 176, 246, 0.4), 8, 0, 0, 2);
+}
+
+.music-slider .thumb:hover {
+    -fx-background-color: #1DD0FF;
+    -fx-scale-x: 1.2; /* 滑鼠移過去稍微放大 */
+    -fx-scale-y: 1.2;
+}
+
+.music-slider .thumb:pressed {
+    -fx-background-color: #0E92D2;
+}
