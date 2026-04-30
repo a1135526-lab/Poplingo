@@ -103,7 +103,7 @@
     -fx-pref-height: 18px;
     -fx-pref-width: 18px;
     -fx-background-radius: 50%; /* 變成正圓形 */
-    -fx-effect: dropshadow(gaussian, rgba(28, 174, 246, 0.4), 8, 0, 0, 2);
+    -fx-effect: dropshadow(gaussian, rgba(28, 176, 246, 0.4), 8, 0, 0, 2);
 }
 
 .music-slider .thumb:hover {
