@@ -13,12 +13,12 @@ public class Models {
     }
 
     public static class Song {
-        String title;
-        String audioFileName; // 音樂檔名
-        String fullLyrics;    // 完整歌詞
+        int id; // 🌟 新增：對應資料庫的 id
+        String title, audioFileName, fullLyrics;
         List<Vocabulary> vocabList = new ArrayList<>();
 
-        public Song(String title, String audioFileName, String fullLyrics) {
+        public Song(int id, String title, String audioFileName, String fullLyrics) {
+            this.id = id;
             this.title = title;
             this.audioFileName = audioFileName;
             this.fullLyrics = fullLyrics;

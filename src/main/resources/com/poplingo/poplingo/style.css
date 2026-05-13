@@ -115,3 +115,25 @@
 .music-slider .thumb:pressed {
     -fx-background-color: #0E92D2;
 }
+
+/* 文字流基礎樣式 */
+.clickable-word {
+    -fx-fill: #4A4E69;
+    -fx-font-size: 16px;
+    -fx-cursor: hand;
+}
+
+/* 滑鼠移入時的效果 */
+.clickable-word:hover {
+    -fx-fill: #1CB0F6; /* 變成鮮艷藍色 */
+    -fx-underline: true; /* 加上底線 */
+    -fx-font-weight: bold;
+}
+
+/* 唱到當前行的同步高光特效 */
+.active-word {
+    -fx-fill: #58CC02; /* 變成活潑的綠色 */
+    -fx-font-weight: 900;
+    -fx-scale-x: 1.05; /* 微微放大產生呼吸感 */
+    -fx-scale-y: 1.05;
+}

@@ -1,17 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
+<?import javafx.scene.text.*?>
 
 <StackPane xmlns:fx="http://javafx.com/fxml/1" xmlns="http://javafx.com/javafx/21" fx:controller="com.poplingo.poplingo.HelloController" styleClass="root">
 
+    <!-- 1. 登入頁面 -->
     <VBox fx:id="pageLogin" alignment="CENTER" spacing="25.0">
         <VBox alignment="CENTER" spacing="2.0">
             <Label text="Poplingo" styleClass="title-label"/>
-            <Label text="找飯店trivago，學音樂poplingo" styleClass="subtitle-text"/>
+            <Label text="從音樂中聽見世界" styleClass="subtitle-text"/>
         </VBox>
         <Button text="開始學習" onAction="#onLoginClick" prefHeight="50.0" prefWidth="260.0" styleClass="login-button"/>
     </VBox>
 
+    <!-- 2. 選擇頁面 (國家/歌手/歌曲共用) -->
     <VBox fx:id="pageSelection" visible="false" alignment="TOP_CENTER" spacing="20.0" style="-fx-padding: 40 20 20 20;">
         <HBox alignment="CENTER_LEFT" maxWidth="300">
             <Button text="←" onAction="#onBackClick" style="-fx-background-color: transparent; -fx-text-fill: #4A4E69; -fx-font-size: 24; -fx-cursor: hand; -fx-font-weight: bold;"/>
@@ -25,6 +28,7 @@
         </ScrollPane>
     </VBox>
 
+    <!-- 3. 學習頁面 (進度條 + TextFlow 完全體) -->
     <VBox fx:id="pageLearn" visible="false" alignment="TOP_CENTER" spacing="15.0" style="-fx-padding: 20;">
         <HBox alignment="CENTER_LEFT">
             <Button text="←" onAction="#onBackClick" style="-fx-background-color: transparent; -fx-text-fill: #4A4E69; -fx-font-size: 24; -fx-cursor: hand; -fx-font-weight: bold;"/>
@@ -35,22 +39,24 @@
 
         <Button fx:id="playButton" text="▶ 播放音樂" onAction="#onPlayMusicClick" styleClass="login-button" prefWidth="200" prefHeight="40" style="-fx-font-size: 16px;"/>
 
+        <!-- 🌟 補回來的：音樂進度條與時間顯示 -->
         <HBox alignment="CENTER" spacing="10" maxWidth="300">
             <Label fx:id="currentTimeLabel" text="00:00" style="-fx-text-fill: #7F7F9D; -fx-font-weight: bold;"/>
             <Slider fx:id="progressBar" HBox.hgrow="ALWAYS" styleClass="music-slider"/>
             <Label fx:id="totalTimeLabel" text="00:00" style="-fx-text-fill: #7F7F9D; -fx-font-weight: bold;"/>
         </HBox>
 
-        <VBox styleClass="flashcard" maxWidth="320" spacing="10" alignment="CENTER">
-            <Label fx:id="wordLabel" text="Word" styleClass="flashcard-word"/>
-            <Label fx:id="phoneticLabel" text="/phonetic/" styleClass="flashcard-phonetic"/>
-            <Label fx:id="translationLabel" text="翻譯" styleClass="flashcard-translation"/>
-            <Label fx:id="lyricLabel" text="歌詞..." styleClass="flashcard-lyric"/>
-            <Button text="下一個單字" onAction="#onNextWordClick" style="-fx-background-color: #E1E4E8; -fx-text-fill: #333; -fx-background-radius: 15; -fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 8 20 8 20;"/>
+        <!-- 單字顯示區域 -->
+        <VBox styleClass="flashcard" maxWidth="320" spacing="8" alignment="CENTER">
+            <Label fx:id="wordLabel" text="請點擊下方歌詞" styleClass="flashcard-word" style="-fx-font-size: 24;"/>
+            <Label fx:id="phoneticLabel" text="點擊單字查詢翻譯" styleClass="flashcard-phonetic"/>
+            <Label fx:id="translationLabel" text="-" styleClass="flashcard-translation"/>
+            <Label fx:id="lyricLabel" text="-" styleClass="flashcard-lyric"/>
         </VBox>
 
-        <ScrollPane fitToWidth="true" style="-fx-background: transparent; -fx-background-color: transparent;" prefHeight="250">
-            <Label fx:id="fullLyricsLabel" text="歌詞讀取中..." style="-fx-text-fill: #555555; -fx-font-size: 14px; -fx-text-alignment: CENTER;" wrapText="true" alignment="CENTER" maxWidth="300"/>
+        <!-- 升級版：可點擊歌詞區 -->
+        <ScrollPane fitToWidth="true" style="-fx-background: transparent; -fx-background-color: transparent;" prefHeight="260" vbarPolicy="NEVER">
+            <TextFlow fx:id="lyricsTextFlow" textAlignment="CENTER" style="-fx-padding: 10;" />
         </ScrollPane>
     </VBox>
 
