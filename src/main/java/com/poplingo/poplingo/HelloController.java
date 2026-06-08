@@ -7,54 +7,134 @@ import javafx.scene.control.Slider;
 import javafx.scene.layout.VBox;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import javafx.util.Duration;
 
 import java.net.URL;
+import java.util.Collections;
+import java.util.List;
 
 public class HelloController {
 
-    @FXML private VBox pageLogin, pageSelection, pageLearn, listContainer;
+    @FXML private VBox pageLogin, pageMode, pageSelection, pageLearn, pageReview, listContainer;
     @FXML private Label selectionTitle, learnTitle, wordLabel, phoneticLabel, translationLabel, lyricLabel;
     @FXML private TextFlow lyricsTextFlow;
     @FXML private Button playButton;
-
-    // 🌟 補回來的進度條綁定
     @FXML private Slider progressBar;
-    @FXML private Label currentTimeLabel;
-    @FXML private Label totalTimeLabel;
+    @FXML private Label currentTimeLabel, totalTimeLabel;
+
+    // 🌟 學習介面收藏鈕綁定
+    @FXML private Button starButton;
+
+    // 複習系統元件
+    @FXML private Label reviewProgressLabel, reviewWordLabel, reviewPhoneticLabel, reviewTranslationLabel, reviewSongLabel, reviewHintLabel;
 
     private Models.Song currentSong;
     private MediaPlayer mediaPlayer;
     private boolean isPlaying = false;
 
+    // 狀態記憶變數
+    private String currentViewState = "LOGIN";
+    private boolean isReviewMode = false;
+    private Models.Country currentCountry;
+    private Models.Artist currentArtist;
+
+    // 當前畫面正在看見的單字快取（供星號收藏切換使用）
+    private Models.Vocabulary currentDisplayedVocab;
+
+    // 複習卡片資料
+    private List<Models.Vocabulary> currentReviewList;
+    private int currentReviewIndex = 0;
+    private boolean isCardFlipped = false;
+
     private void showPage(String pageName) {
         pageLogin.setVisible(pageName.equals("LOGIN"));
+        pageMode.setVisible(pageName.equals("MODE"));
         pageSelection.setVisible(pageName.equals("SELECT"));
         pageLearn.setVisible(pageName.equals("LEARN"));
+        pageReview.setVisible(pageName.equals("REVIEW"));
     }
 
-    @FXML protected void onLoginClick() { loadCountries(); }
+    @FXML protected void onLoginClick() {
+        showPage("MODE");
+        currentViewState = "MODE";
+    }
+
+    @FXML protected void onLearningModeClick() {
+        isReviewMode = false;
+        loadCountries();
+    }
+
+    @FXML protected void onReviewModeClick() {
+        isReviewMode = true;
+        loadCountries();
+    }
 
     @FXML
     protected void onBackClick() {
         if (mediaPlayer != null) mediaPlayer.stop();
-        showPage("SELECT");
+
+        switch (currentViewState) {
+            case "LEARN": loadSongs(currentArtist); break;
+            case "REVIEW": loadCountries(); break;
+            case "SONGS": loadArtists(currentCountry); break;
+            case "ARTISTS": loadCountries(); break;
+            case "COUNTRIES":
+                showPage("MODE");
+                currentViewState = "MODE";
+                break;
+            case "MODE":
+                showPage("LOGIN");
+                currentViewState = "LOGIN";
+                break;
+        }
     }
 
     private void loadCountries() {
+        currentViewState = "COUNTRIES";
         showPage("SELECT");
-        selectionTitle.setText("探索音樂世界");
+        selectionTitle.setText(isReviewMode ? "選擇複習的語言" : "探索音樂世界");
         listContainer.getChildren().clear();
+
         for (Models.Country c : Database.getAllCountries()) {
             Button btn = createListButton(c.name);
-            btn.setOnAction(e -> loadArtists(c));
+
+            // 🌟 新增：嘗試讀取與國家名稱相同的圖片
+            try {
+                URL imgUrl = getClass().getResource("/com/poplingo/poplingo/images/" + c.name + ".png");
+                if (imgUrl != null) {
+                    // 建立圖片元件
+                    Image flagImage = new Image(imgUrl.toExternalForm());
+                    ImageView flagView = new ImageView(flagImage);
+
+                    // 設定國旗的大小
+                    flagView.setFitWidth(35);  // 寬度
+                    flagView.setFitHeight(25); // 高度
+                    flagView.setPreserveRatio(true); // 保持比例不變形
+
+                    // 將圖片塞入按鈕，並設定圖片與文字的距離
+                    btn.setGraphic(flagView);
+                    btn.setGraphicTextGap(15);
+                }
+            } catch (Exception e) {
+                System.out.println("找不到國旗圖片：" + c.name + ".png");
+            }
+
+            btn.setOnAction(e -> {
+                if (isReviewMode) startReview(c);
+                else loadArtists(c);
+            });
             listContainer.getChildren().add(btn);
         }
     }
 
     private void loadArtists(Models.Country country) {
+        this.currentCountry = country;
+        currentViewState = "ARTISTS";
+        showPage("SELECT");
         selectionTitle.setText(country.name + " 的歌手");
         listContainer.getChildren().clear();
         for (Models.Artist a : country.artists) {
@@ -65,6 +145,9 @@ public class HelloController {
     }
 
     private void loadSongs(Models.Artist artist) {
+        this.currentArtist = artist;
+        currentViewState = "SONGS";
+        showPage("SELECT");
         selectionTitle.setText(artist.name + " 的歌曲");
         listContainer.getChildren().clear();
         for (Models.Song s : artist.songs) {
@@ -81,28 +164,102 @@ public class HelloController {
         return btn;
     }
 
-//    private static class LyricLine {
-//        double timeSeconds;
-//        java.util.List<Text> textNodes = new java.util.ArrayList<>();
-//        public LyricLine(double timeSeconds) { this.timeSeconds = timeSeconds; }
-//    }
+    // ==========================================
+    // 🌟 點擊收藏按鈕動作
+    // ==========================================
+    @FXML
+    protected void onStarClick() {
+        if (currentDisplayedVocab != null) {
+            // 切換反轉狀態
+            currentDisplayedVocab.isStarred = !currentDisplayedVocab.isStarred;
+            // 更新進 MySQL 資料庫
+            Database.updateStarStatus(currentDisplayedVocab.id, currentDisplayedVocab.isStarred);
+            // 即時反應介面圖示
+            starButton.setText(currentDisplayedVocab.isStarred ? "★" : "☆");
+        }
+    }
 
-    // ... 前面的按鈕與畫面切換邏輯維持不變 ...
+    // ==========================================
+    // 複習模式邏輯
+    // ==========================================
+    private void startReview(Models.Country country) {
+        this.currentCountry = country;
+        currentViewState = "REVIEW";
+        showPage("REVIEW");
 
-    // 🌟 新增：用來記錄每一行歌詞的秒數與它的文字節點
+        // 固定傳入對應國家代號 (1:韓國, 2:日本, 3:菲律賓)
+        int idMapping = country.name.equals("Korea") ? 1 : (country.name.equals("Japan") ? 2 : 3);
+        currentReviewList = Database.getVocabsByCountry(idMapping);
+        Collections.shuffle(currentReviewList);
+
+        currentReviewIndex = 0;
+        updateReviewCard();
+    }
+
+    private void updateReviewCard() {
+        if (currentReviewList == null || currentReviewList.isEmpty()) {
+            reviewWordLabel.setText("尚無收藏單字");
+            reviewPhoneticLabel.setText("");
+            reviewProgressLabel.setText("0 / 0");
+            reviewTranslationLabel.setVisible(false);
+            reviewSongLabel.setVisible(false);
+            reviewHintLabel.setVisible(false);
+            return;
+        }
+
+        Models.Vocabulary currentVocab = currentReviewList.get(currentReviewIndex);
+
+        isCardFlipped = false;
+        reviewWordLabel.setText(currentVocab.word);
+        reviewPhoneticLabel.setText(currentVocab.phonetic != null ? currentVocab.phonetic : "");
+
+        reviewTranslationLabel.setText(currentVocab.translation);
+        reviewSongLabel.setText("🎵 來自: " + currentVocab.songTitle);
+
+        reviewTranslationLabel.setVisible(false);
+        reviewSongLabel.setVisible(false);
+        reviewHintLabel.setVisible(true);
+
+        reviewProgressLabel.setText((currentReviewIndex + 1) + " / " + currentReviewList.size());
+    }
+
+    @FXML protected void onFlipCard() {
+        if (currentReviewList == null || currentReviewList.isEmpty()) return;
+        isCardFlipped = !isCardFlipped;
+        reviewTranslationLabel.setVisible(isCardFlipped);
+        reviewSongLabel.setVisible(isCardFlipped);
+        reviewHintLabel.setVisible(!isCardFlipped);
+    }
+
+    @FXML protected void onNextCardClick() {
+        if (currentReviewList != null && currentReviewIndex < currentReviewList.size() - 1) {
+            currentReviewIndex++;
+            updateReviewCard();
+        }
+    }
+
+    @FXML protected void onPrevCardClick() {
+        if (currentReviewList != null && currentReviewIndex > 0) {
+            currentReviewIndex--;
+            updateReviewCard();
+        }
+    }
+
+    // ==========================================
+    // 音樂學習模式邏輯
+    // ==========================================
     private static class LyricLine {
         double timeSeconds;
         java.util.List<Text> textNodes = new java.util.ArrayList<>();
         public LyricLine(double timeSeconds) { this.timeSeconds = timeSeconds; }
     }
 
-    // 🌟 新增：儲存當前歌曲的所有歌詞行，以及目前亮起的是哪一行
     private java.util.List<LyricLine> lyricLines = new java.util.ArrayList<>();
     private int currentActiveLineIndex = -1;
 
-    // --- 學習與音樂播放邏輯 (同步歌詞升級版) ---
     private void startLearning(Models.Song song) {
         showPage("LEARN");
+        currentViewState = "LEARN";
         this.currentSong = song;
 
         wordLabel.setText("請點擊下方歌詞");
@@ -110,12 +267,14 @@ public class HelloController {
         translationLabel.setText("-");
         lyricLabel.setText("-");
 
-        // 1. 初始化狀態與清空畫面
+        // 🌟 初始化未點選單字前，先隱藏星號按鈕
+        starButton.setVisible(false);
+        currentDisplayedVocab = null;
+
         lyricLines.clear();
         currentActiveLineIndex = -1;
         lyricsTextFlow.getChildren().clear();
 
-        // 2. 解析 LRC 格式並建立可點擊歌詞
         String[] lines = song.fullLyrics.split("\n");
         for (String line : lines) {
             line = line.trim();
@@ -124,20 +283,15 @@ public class HelloController {
             double timeSeconds = 0.0;
             String lyricText = line;
 
-            // 正規表達式：檢查是否符合 [mm:ss.xx] 格式
             if (line.matches("\\[\\d{2}:\\d{2}\\.\\d{2}\\].*")) {
                 String minStr = line.substring(1, 3);
                 String secStr = line.substring(4, 9);
-                // 將分和秒轉換為總秒數 (例如 01:30.00 -> 90.0秒)
                 timeSeconds = Integer.parseInt(minStr) * 60 + Double.parseDouble(secStr);
-                // 擷取時間標籤後面的純歌詞字串
                 lyricText = line.substring(10).trim();
             }
 
             LyricLine lyricLine = new LyricLine(timeSeconds);
-
             final String finalLyricText = lyricText;
-            // 🌟 1. 新增一個常數分身，用來記錄這行歌詞的時間，傳給 Lambda 使用
             final double finalTimeSeconds = timeSeconds;
 
             String[] words = lyricText.split(" ");
@@ -145,31 +299,24 @@ public class HelloController {
                 Text textNode = new Text(word + " ");
                 textNode.getStyleClass().add("clickable-word");
 
-                // 🌟 2. 將原本的一行點擊事件，改寫成多行：同時查單字 + 跳轉音樂時間
                 textNode.setOnMouseClicked(e -> {
-                    handleWordClick(word, finalLyricText); // 查單字並更新畫面上方
-
-                    if (mediaPlayer != null) {
-                        // 讓音樂播放器直接跳轉到該句歌詞的秒數
-                        mediaPlayer.seek(Duration.seconds(finalTimeSeconds));
-                    }
+                    handleWordClick(word, finalLyricText);
+                    if (mediaPlayer != null) mediaPlayer.seek(Duration.seconds(finalTimeSeconds));
                 });
 
                 lyricLine.textNodes.add(textNode);
                 lyricsTextFlow.getChildren().add(textNode);
             }
             lyricsTextFlow.getChildren().add(new Text("\n"));
-            lyricLines.add(lyricLine); // 存入記憶體供播放時比對
+            lyricLines.add(lyricLine);
         }
 
-        // 3. 進度條初始化
         progressBar.setValue(0);
         currentTimeLabel.setText("00:00");
         totalTimeLabel.setText("00:00");
         playButton.setText("▶ 播放音樂");
         isPlaying = false;
 
-        // 4. 音樂播放器與時間軸綁定
         if (mediaPlayer != null) mediaPlayer.dispose();
         try {
             URL resource = getClass().getResource("/com/poplingo/poplingo/audio/" + song.audioFileName);
@@ -182,35 +329,26 @@ public class HelloController {
                     totalTimeLabel.setText(formatTime(totalDuration));
                 });
 
-                // 🌟 音樂播放中：同時推進滑桿與判斷歌詞同步
                 mediaPlayer.currentTimeProperty().addListener((obs, oldTime, newTime) -> {
                     if (!progressBar.isValueChanging()) {
                         progressBar.setValue(newTime.toSeconds());
                         currentTimeLabel.setText(formatTime(newTime));
                     }
 
-                    // --- 歌詞同步核心演算法 ---
                     double currentTime = newTime.toSeconds();
                     int activeIndex = -1;
 
-                    // 尋找當前時間落在這首歌的哪一行
                     for (int i = 0; i < lyricLines.size(); i++) {
-                        if (currentTime >= lyricLines.get(i).timeSeconds) {
-                            activeIndex = i;
-                        } else {
-                            break; // 因為時間是遞增的，一旦歌詞時間大於當前時間就可以提早結束迴圈
-                        }
+                        if (currentTime >= lyricLines.get(i).timeSeconds) activeIndex = i;
+                        else break;
                     }
 
-                    // 如果「該亮的行」跟「目前亮的行」不一樣，就切換樣式
                     if (activeIndex != currentActiveLineIndex) {
-                        // (A) 關閉前一行的亮色
                         if (currentActiveLineIndex >= 0 && currentActiveLineIndex < lyricLines.size()) {
                             for (Text t : lyricLines.get(currentActiveLineIndex).textNodes) {
                                 t.getStyleClass().remove("active-word");
                             }
                         }
-                        // (B) 開啟新的一行亮色
                         if (activeIndex >= 0) {
                             for (Text t : lyricLines.get(activeIndex).textNodes) {
                                 t.getStyleClass().add("active-word");
@@ -235,19 +373,27 @@ public class HelloController {
         } catch (Exception e) { System.out.println("音檔讀取失敗"); }
     }
 
-    // ... 後面的 handleWordClick, onPlayMusicClick 維持不變 ...
-
     private void handleWordClick(String rawWord, String fullLine) {
-        String cleanWord = rawWord.replaceAll("[^a-zA-Z가-힣0-9]", "");
+        String cleanWord = rawWord.replaceAll("[^\\p{L}0-9]", "");
         if (cleanWord.isEmpty()) return;
 
         Models.Vocabulary vocab = Database.searchWord(currentSong.id, cleanWord);
         if (vocab != null) {
+            // 🌟 快取當前點選的單字
+            currentDisplayedVocab = vocab;
+            // 🌟 顯示收藏按鈕，並根據收藏狀態顯示對應圖示
+            starButton.setVisible(true);
+            starButton.setText(vocab.isStarred ? "★" : "☆");
+
             wordLabel.setText(vocab.word);
             phoneticLabel.setText(vocab.phonetic);
             translationLabel.setText(vocab.translation);
             lyricLabel.setText(vocab.lyric);
         } else {
+            // 資料庫查無此字，不提供收藏
+            starButton.setVisible(false);
+            currentDisplayedVocab = null;
+
             wordLabel.setText(cleanWord);
             phoneticLabel.setText("...");
             translationLabel.setText("尚無此單字翻譯");
@@ -255,15 +401,13 @@ public class HelloController {
         }
     }
 
-    @FXML
-    protected void onPlayMusicClick() {
+    @FXML protected void onPlayMusicClick() {
         if (mediaPlayer == null) return;
         if (isPlaying) { mediaPlayer.pause(); playButton.setText("▶ 播放音樂"); }
         else { mediaPlayer.play(); playButton.setText("⏸ 暫停播放"); }
         isPlaying = !isPlaying;
     }
 
-    // 🌟 輔助方法：時間格式化
     private String formatTime(Duration duration) {
         int totalSeconds = (int) Math.floor(duration.toSeconds());
         int minutes = totalSeconds / 60;
