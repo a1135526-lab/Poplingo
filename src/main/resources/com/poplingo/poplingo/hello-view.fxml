@@ -9,22 +9,45 @@
 
     <VBox fx:id="pageLogin" alignment="CENTER" spacing="25.0">
         <VBox alignment="CENTER" spacing="2.0">
-            <ImageView fitWidth="200" preserveRatio="true">
+            <ImageView fitWidth="120" preserveRatio="true">
                 <image>
                     <Image url="@images/cover_bird.png"/>
                 </image>
             </ImageView>
-
             <Label text="Poplingo" styleClass="title-label"/>
             <Label text="找飯店trivago，學音樂poplingo" styleClass="subtitle-text"/>
-
         </VBox>
-        <Button text="開始學習囉!" onAction="#onLoginClick" prefHeight="50.0" prefWidth="260.0" styleClass="login-button"/>
+
+        <VBox alignment="CENTER" spacing="15.0" maxWidth="260">
+            <TextField fx:id="loginUsernameField" promptText="請輸入帳號" styleClass="input-field" prefHeight="40"/>
+            <PasswordField fx:id="loginPasswordField" promptText="請輸入密碼" styleClass="input-field" prefHeight="40"/>
+            <Label fx:id="loginMessageLabel" text="" style="-fx-text-fill: #FF4B4B; -fx-font-size: 14;"/>
+
+            <Button text="登入" onAction="#onLoginSubmit" prefHeight="45.0" prefWidth="260.0" styleClass="login-button"/>
+            <Button text="註冊新帳號" onAction="#onGoToRegisterClick" style="-fx-background-color: transparent; -fx-text-fill: #4A4E69; -fx-cursor: hand; -fx-font-weight: bold;"/>
+        </VBox>
+
         <ImageView fitWidth="400" preserveRatio="true">
             <image>
                 <Image url="@images/cover_animal.png"/>
             </image>
         </ImageView>
+    </VBox>
+
+    <VBox fx:id="pageRegister" visible="false" alignment="CENTER" spacing="25.0">
+        <VBox alignment="CENTER" spacing="5.0">
+            <Label text="建立新帳號" styleClass="title-label" style="-fx-font-size: 32;"/>
+            <Label text="加入 Poplingo 的世界" styleClass="subtitle-text"/>
+        </VBox>
+
+        <VBox alignment="CENTER" spacing="15.0" maxWidth="260">
+            <TextField fx:id="registerUsernameField" promptText="設定帳號" styleClass="input-field" prefHeight="40"/>
+            <PasswordField fx:id="registerPasswordField" promptText="設定密碼" styleClass="input-field" prefHeight="40"/>
+            <Label fx:id="registerMessageLabel" text="" style="-fx-text-fill: #FF4B4B; -fx-font-size: 14;"/>
+
+            <Button text="立即註冊" onAction="#onRegisterSubmit" prefHeight="45.0" prefWidth="260.0" styleClass="login-button" style="-fx-background-color: #58CC02;"/>
+            <Button text="← 返回登入" onAction="#onGoToLoginClick" style="-fx-background-color: transparent; -fx-text-fill: #4A4E69; -fx-cursor: hand; -fx-font-weight: bold;"/>
+        </VBox>
     </VBox>
 
     <VBox fx:id="pageMode" visible="false" alignment="CENTER" spacing="30.0">
@@ -51,7 +74,7 @@
         <HBox alignment="CENTER_LEFT">
             <Button text="←" onAction="#onBackClick" style="-fx-background-color: transparent; -fx-text-fill: #4A4E69; -fx-font-size: 24; -fx-cursor: hand; -fx-font-weight: bold;"/>
             <Region HBox.hgrow="ALWAYS" />
-            <Label fx:id="learnTitle" text="學習中..." styleClass="subtitle-text"/>
+<!--            <Label fx:id="learnTitle" text="學習中..." styleClass="subtitle-text"/>-->
             <Region HBox.hgrow="ALWAYS" />
         </HBox>
 

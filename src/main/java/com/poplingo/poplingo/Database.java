@@ -42,6 +42,42 @@ public class Database {
         return null;
     }
 
+    // 🌟 新增：驗證使用者登入
+    public static boolean loginUser(String username, String password) {
+        String sql = "SELECT * FROM users WHERE username = ? AND password = ?";
+        try (Connection conn = MySQLConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, username);
+            stmt.setString(2, password);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next(); // 如果有查到資料，代表帳號密碼正確，回傳 true
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return false;
+    }
+
+    // 🌟 新增：註冊新帳號
+    public static boolean registerUser(String username, String password) {
+        // 先檢查帳號是否已經存在
+        String checkSql = "SELECT * FROM users WHERE username = ?";
+        try (Connection conn = MySQLConnection.getConnection();
+             PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
+            checkStmt.setString(1, username);
+            try (ResultSet rs = checkStmt.executeQuery()) {
+                if (rs.next()) return false; // 帳號已存在，註冊失敗
+            }
+
+            // 帳號不存在，寫入新資料
+            String insertSql = "INSERT INTO users (username, password) VALUES (?, ?)";
+            try (PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
+                insertStmt.setString(1, username);
+                insertStmt.setString(2, password); // 實務上這裡通常會進行雜湊(Hash)加密，專題展示用明文即可
+                insertStmt.executeUpdate();
+                return true;
+            }
+        } catch (SQLException e) { e.printStackTrace(); }
+        return false;
+    }
     // 🌟 更新：複習模式只撈取該國家「已加上星號 (is_starred = 1)」的單字
     public static List<Models.Vocabulary> getVocabsByCountry(int countryId) {
         List<Models.Vocabulary> list = new ArrayList<>();

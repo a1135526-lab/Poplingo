@@ -19,8 +19,11 @@ import java.util.List;
 
 public class HelloController {
 
-    @FXML private VBox pageLogin, pageMode, pageSelection, pageLearn, pageReview, listContainer;
-    @FXML private Label selectionTitle, learnTitle, wordLabel, phoneticLabel, translationLabel, lyricLabel;
+    @FXML private VBox pageLogin, pageRegister, pageMode, pageSelection, pageLearn, pageReview, listContainer;
+    @FXML private javafx.scene.control.TextField loginUsernameField, registerUsernameField;
+    @FXML private javafx.scene.control.PasswordField loginPasswordField, registerPasswordField;
+    @FXML private Label loginMessageLabel, registerMessageLabel;
+    @FXML private Label selectionTitle, wordLabel, phoneticLabel, translationLabel, lyricLabel;
     @FXML private TextFlow lyricsTextFlow;
     @FXML private Button playButton;
     @FXML private Slider progressBar;
@@ -31,6 +34,7 @@ public class HelloController {
 
     // 複習系統元件
     @FXML private Label reviewProgressLabel, reviewWordLabel, reviewPhoneticLabel, reviewTranslationLabel, reviewSongLabel, reviewHintLabel;
+
 
     private Models.Song currentSong;
     private MediaPlayer mediaPlayer;
@@ -52,15 +56,72 @@ public class HelloController {
 
     private void showPage(String pageName) {
         pageLogin.setVisible(pageName.equals("LOGIN"));
+        pageRegister.setVisible(pageName.equals("REGISTER")); // 🌟 新增這行
         pageMode.setVisible(pageName.equals("MODE"));
         pageSelection.setVisible(pageName.equals("SELECT"));
         pageLearn.setVisible(pageName.equals("LEARN"));
         pageReview.setVisible(pageName.equals("REVIEW"));
     }
 
-    @FXML protected void onLoginClick() {
-        showPage("MODE");
-        currentViewState = "MODE";
+    // 🌟 切換到註冊畫面
+    @FXML protected void onGoToRegisterClick() {
+        loginMessageLabel.setText(""); // 清除錯誤訊息
+        showPage("REGISTER");
+        currentViewState = "REGISTER";
+    }
+
+    // 🌟 切換回登入畫面
+    @FXML protected void onGoToLoginClick() {
+        registerMessageLabel.setText("");
+        showPage("LOGIN");
+        currentViewState = "LOGIN";
+    }
+
+    // 🌟 處理登入送出
+    @FXML protected void onLoginSubmit() {
+        String user = loginUsernameField.getText().trim();
+        String pass = loginPasswordField.getText().trim();
+
+        if (user.isEmpty() || pass.isEmpty()) {
+            loginMessageLabel.setText("帳號或密碼不能為空！");
+            return;
+        }
+
+        if (Database.loginUser(user, pass)) {
+            // 登入成功，進入系統
+            loginMessageLabel.setText("");
+            loginPasswordField.clear(); // 清空密碼欄位確保安全
+            showPage("MODE");
+            currentViewState = "MODE";
+        } else {
+            loginMessageLabel.setText("帳號或密碼錯誤！");
+        }
+    }
+
+    // 🌟 處理註冊送出
+    @FXML protected void onRegisterSubmit() {
+        String user = registerUsernameField.getText().trim();
+        String pass = registerPasswordField.getText().trim();
+
+        if (user.isEmpty() || pass.isEmpty()) {
+            registerMessageLabel.setText("帳號或密碼不能為空！");
+            return;
+        }
+
+        if (Database.registerUser(user, pass)) {
+            // 註冊成功，自動跳回登入頁面並提示
+            registerMessageLabel.setText("");
+            registerUsernameField.clear();
+            registerPasswordField.clear();
+
+            showPage("LOGIN");
+            currentViewState = "LOGIN";
+            loginMessageLabel.setStyle("-fx-text-fill: #58CC02;"); // 變成綠色提示
+            loginMessageLabel.setText("註冊成功！請登入");
+        } else {
+            registerMessageLabel.setStyle("-fx-text-fill: #FF4B4B;");
+            registerMessageLabel.setText("此帳號已經被註冊過囉！");
+        }
     }
 
     @FXML protected void onLearningModeClick() {
@@ -254,7 +315,7 @@ public class HelloController {
         public LyricLine(double timeSeconds) { this.timeSeconds = timeSeconds; }
     }
 
-    private java.util.List<LyricLine> lyricLines = new java.util.ArrayList<>();
+    final private java.util.List<LyricLine> lyricLines = new java.util.ArrayList<>();
     private int currentActiveLineIndex = -1;
 
     private void startLearning(Models.Song song) {
@@ -282,8 +343,7 @@ public class HelloController {
 
             double timeSeconds = 0.0;
             String lyricText = line;
-
-            if (line.matches("\\[\\d{2}:\\d{2}\\.\\d{2}\\].*")) {
+            if (line.matches("\\[\\d{2}:\\d{2}\\.\\d{2}].*")) {
                 String minStr = line.substring(1, 3);
                 String secStr = line.substring(4, 9);
                 timeSeconds = Integer.parseInt(minStr) * 60 + Double.parseDouble(secStr);
@@ -374,6 +434,7 @@ public class HelloController {
     }
 
     private void handleWordClick(String rawWord, String fullLine) {
+//        String cleanWord = rawWord.replaceAll("[^a-zA-Z가-힣0-9]", "");
         String cleanWord = rawWord.replaceAll("[^\\p{L}0-9]", "");
         if (cleanWord.isEmpty()) return;
 
