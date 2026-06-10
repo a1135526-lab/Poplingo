@@ -26,7 +26,7 @@ public class MySQLConnection {
     public static void main(String[] args) {
         Connection conn = getConnection();
         if (conn != null) {
-            System.out.println("🎉 恭喜！成功連線到 XAMPP 的 MySQL 資料庫！");
+            System.out.println("🎉 成功連線到 XAMPP 的 MySQL 資料庫！");
         }
     }
 }
