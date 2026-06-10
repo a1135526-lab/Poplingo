@@ -13,7 +13,7 @@ public class HelloApplication extends Application {
         Scene scene = new Scene(fxmlLoader.load(), 400, 700); // 拉長視窗以顯示歌詞
         scene.getStylesheets().add(getClass().getResource("style.css").toExternalForm());
 
-        stage.setTitle("Poplingo - 音樂語言學習");
+        stage.setTitle("Poplingo");
         stage.setScene(scene);
         stage.show();
     }
