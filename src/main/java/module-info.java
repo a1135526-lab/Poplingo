@@ -1,9 +1,13 @@
 module com.poplingo.poplingo {
     requires javafx.controls;
     requires javafx.fxml;
-    requires javafx.media; // 🌟 補上這行：允許使用音樂播放模組
-    requires java.sql;//允許程式使用資料庫連線工具！
+    requires javafx.media;
 
-    opens com.poplingo.poplingo to javafx.fxml;
+    // 🌟 新增 HTTP 與 JSON 解析模組
+    requires java.net.http;
+    requires com.google.gson;
+
+    // 🌟 允許 Gson 反射讀取我們的物件
+    opens com.poplingo.poplingo to javafx.fxml, com.google.gson;
     exports com.poplingo.poplingo;
 }

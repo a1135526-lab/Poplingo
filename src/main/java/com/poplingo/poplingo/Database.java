@@ -1,154 +1,142 @@
 package com.poplingo.poplingo;
 
-import java.sql.*;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
+
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Database {
 
+    // 🌟 你的 LEMP 伺服器 API 網址
+    private static final String API_BASE_URL = "https://mofumofu.ddns.net/api.php?action=";
+    private static final HttpClient client = HttpClient.newHttpClient();
+    private static final Gson gson = new Gson();
+
     public static List<Models.Country> getAllCountries() {
-        List<Models.Country> countries = new ArrayList<>();
-        try (Connection conn = MySQLConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement("SELECT * FROM countries");
-             ResultSet rs = stmt.executeQuery()) {
-            while (rs.next()) {
-                int countryId = rs.getInt("id");
-                Models.Country country = new Models.Country(rs.getString("name"));
-                loadArtistsForCountry(conn, countryId, country);
-                countries.add(country);
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(API_BASE_URL + "get_countries"))
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == 200) {
+                return gson.fromJson(response.body(), new TypeToken<List<Models.Country>>(){}.getType());
             }
-        } catch (SQLException e) { e.printStackTrace(); }
-        return countries;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return new ArrayList<>();
     }
 
     public static Models.Vocabulary searchWord(int songId, String searchWord) {
-        String sql = "SELECT * FROM vocabularies WHERE song_id = ? AND (word = ? OR ? LIKE CONCAT('%', word, '%')) LIMIT 1";
-        try (Connection conn = MySQLConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, songId);
-            stmt.setString(2, searchWord);
-            stmt.setString(3, searchWord);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return new Models.Vocabulary(
-                            rs.getInt("id"), // 🌟 讀取 id
-                            rs.getString("word"), rs.getString("phonetic"),
-                            rs.getString("translation"), rs.getString("lyric_context"),
-                            rs.getInt("is_starred") == 1 // 🌟 讀取收藏狀態
-                    );
-                }
+        try {
+            // 對中文/日文等字串進行 URL 編碼
+            String encodedWord = URLEncoder.encode(searchWord, StandardCharsets.UTF_8);
+            String url = API_BASE_URL + "search_word&song_id=" + songId + "&word=" + encodedWord;
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == 200 && !response.body().trim().equals("null")) {
+                return gson.fromJson(response.body(), Models.Vocabulary.class);
             }
-        } catch (SQLException e) { e.printStackTrace(); }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return null;
     }
 
-    // 🌟 新增：驗證使用者登入
     public static boolean loginUser(String username, String password) {
-        String sql = "SELECT * FROM users WHERE username = ? AND password = ?";
-        try (Connection conn = MySQLConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, username);
-            stmt.setString(2, password);
-            try (ResultSet rs = stmt.executeQuery()) {
-                return rs.next(); // 如果有查到資料，代表帳號密碼正確，回傳 true
-            }
-        } catch (SQLException e) { e.printStackTrace(); }
-        return false;
-    }
+        try {
+            JsonObject json = new JsonObject();
+            json.addProperty("username", username);
+            json.addProperty("password", password);
 
-    // 🌟 新增：註冊新帳號
-    public static boolean registerUser(String username, String password) {
-        // 先檢查帳號是否已經存在
-        String checkSql = "SELECT * FROM users WHERE username = ?";
-        try (Connection conn = MySQLConnection.getConnection();
-             PreparedStatement checkStmt = conn.prepareStatement(checkSql)) {
-            checkStmt.setString(1, username);
-            try (ResultSet rs = checkStmt.executeQuery()) {
-                if (rs.next()) return false; // 帳號已存在，註冊失敗
-            }
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(API_BASE_URL + "login"))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(json.toString()))
+                    .build();
 
-            // 帳號不存在，寫入新資料
-            String insertSql = "INSERT INTO users (username, password) VALUES (?, ?)";
-            try (PreparedStatement insertStmt = conn.prepareStatement(insertSql)) {
-                insertStmt.setString(1, username);
-                insertStmt.setString(2, password); // 實務上這裡通常會進行雜湊(Hash)加密，專題展示用明文即可
-                insertStmt.executeUpdate();
-                return true;
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == 200) {
+                JsonObject resJson = gson.fromJson(response.body(), JsonObject.class);
+                return resJson.get("success").getAsBoolean();
             }
-        } catch (SQLException e) { e.printStackTrace(); }
-        return false;
-    }
-    // 🌟 更新：複習模式只撈取該國家「已加上星號 (is_starred = 1)」的單字
-    public static List<Models.Vocabulary> getVocabsByCountry(int countryId) {
-        List<Models.Vocabulary> list = new ArrayList<>();
-        String sql = "SELECT v.id, v.word, v.phonetic, v.translation, v.lyric_context, s.title, v.is_starred " +
-                "FROM vocabularies v " +
-                "JOIN songs s ON v.song_id = s.id " +
-                "JOIN artists a ON s.artist_id = a.id " +
-                "WHERE a.country_id = ? AND v.is_starred = 1"; // 🌟 限制必須已收藏
-
-        try (Connection conn = MySQLConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, countryId);
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    Models.Vocabulary vocab = new Models.Vocabulary(
-                            rs.getInt("id"),
-                            rs.getString("word"),
-                            rs.getString("phonetic"),
-                            rs.getString("translation"),
-                            rs.getString("lyric_context"),
-                            rs.getInt("is_starred") == 1
-                    );
-                    vocab.songTitle = rs.getString("title");
-                    list.add(vocab);
-                }
-            }
-        } catch (SQLException e) { e.printStackTrace(); }
-        return list;
-    }
-
-    // 🌟 新增：即時更新單字的星號收藏狀態
-    public static void updateStarStatus(int vocabId, boolean isStarred) {
-        String sql = "UPDATE vocabularies SET is_starred = ? WHERE id = ?";
-        try (Connection conn = MySQLConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, isStarred ? 1 : 0);
-            stmt.setInt(2, vocabId);
-            stmt.executeUpdate();
-        } catch (SQLException e) { e.printStackTrace(); }
-    }
-
-    private static void loadArtistsForCountry(Connection conn, int countryId, Models.Country country) throws SQLException {
-        String sql = "SELECT * FROM artists WHERE country_id = ?";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, countryId);
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    int artistId = rs.getInt("id");
-                    Models.Artist artist = new Models.Artist(rs.getString("name"));
-                    loadSongsForArtist(conn, artistId, artist);
-                    country.addArtist(artist);
-                }
-            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+        return false;
     }
 
-    private static void loadSongsForArtist(Connection conn, int artistId, Models.Artist artist) throws SQLException {
-        String sql = "SELECT * FROM songs WHERE artist_id = ?";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, artistId);
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    Models.Song song = new Models.Song(
-                            rs.getInt("id"),
-                            rs.getString("title"),
-                            rs.getString("audio_file_name"),
-                            rs.getString("full_lyrics")
-                    );
-                    artist.addSong(song);
-                }
+    public static boolean registerUser(String username, String password) {
+        try {
+            JsonObject json = new JsonObject();
+            json.addProperty("username", username);
+            json.addProperty("password", password);
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(API_BASE_URL + "register"))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(json.toString()))
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == 200) {
+                JsonObject resJson = gson.fromJson(response.body(), JsonObject.class);
+                return resJson.get("success").getAsBoolean();
             }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    public static List<Models.Vocabulary> getVocabsByCountry(int countryId) {
+        try {
+            String url = API_BASE_URL + "get_vocabs&country_id=" + countryId;
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == 200) {
+                return gson.fromJson(response.body(), new TypeToken<List<Models.Vocabulary>>(){}.getType());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return new ArrayList<>();
+    }
+
+    public static void updateStarStatus(int vocabId, boolean isStarred) {
+        try {
+            JsonObject json = new JsonObject();
+            json.addProperty("vocab_id", vocabId);
+            json.addProperty("is_starred", isStarred);
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(API_BASE_URL + "update_star"))
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(json.toString()))
+                    .build();
+
+            client.send(request, HttpResponse.BodyHandlers.ofString());
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }
