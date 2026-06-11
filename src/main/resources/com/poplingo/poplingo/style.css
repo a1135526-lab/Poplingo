@@ -5,11 +5,6 @@
 }
 
 .title-label {
-    /*-fx-text-fill: #4A4E69;*/
-    /*-fx-font-size: 50px;*/
-    /*-fx-font-family: 'Segoe UI Rounded', 'Arial', sans-serif;*/
-    /*-fx-font-weight: 900;*/
-    /*-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 5, 0, 0, 3);*/
     -fx-font-size: 38px;
     -fx-font-weight: 900;
     -fx-text-fill: #4A4E69;
@@ -50,15 +45,6 @@
 
 /* 登入按鈕 */
 .login-button {
-    /*-fx-background-color: #58CC02;*/
-    /*-fx-text-fill: white;*/
-    /*-fx-font-size: 20px;*/
-    /*-fx-font-weight: 900;*/
-    /*-fx-background-radius: 25;*/
-    /*-fx-border-radius: 25;*/
-    /*-fx-cursor: hand;*/
-    /*-fx-border-color: #58A700;*/
-    /*-fx-border-width: 0 0 5 0;*/
     -fx-background-color: #4A4E69;
     -fx-text-fill: #FFFFFF;
     -fx-font-size: 16px;
@@ -82,15 +68,6 @@
 /* 列表按鈕 (共用玩具按鈕風格，但顏色改為水藍色) */
 .list-button {
     -fx-background-color: #1CB0F6;
-    /*-fx-text-fill: white;*/
-    /*-fx-font-size: 18px;*/
-    /*-fx-font-weight: 900;*/
-    /*-fx-background-radius: 20;*/
-    /*-fx-border-radius: 20;*/
-    /*-fx-cursor: hand;*/
-    /*-fx-border-color: #1899D6;*/
-    /*-fx-border-width: 0 0 4 0;*/
-    /*-fx-background-color: #FFFFFF;*/
     -fx-text-fill: #4A4E69;
     -fx-font-size: 16px;
     -fx-font-weight: bold;
